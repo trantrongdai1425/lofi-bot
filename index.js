@@ -376,7 +376,6 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildVoiceStates,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
   ],
 });
 
@@ -427,15 +426,23 @@ client.once('ready', async () => {
   try {
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
     if (process.env.GUILD_ID) {
-      await rest.put(Routes.applicationGuildCommands(client.user.id, process.env.GUILD_ID), {
-        body: commands.map((c) => c.toJSON()),
-      });
-      console.log(`⚡ Đã đăng ký Slash Command cho Guild ID: ${process.env.GUILD_ID}`);
+      try {
+        await rest.put(Routes.applicationGuildCommands(client.user.id, process.env.GUILD_ID), {
+          body: commands.map((c) => c.toJSON()),
+        });
+        console.log(`⚡ Đã đăng ký Slash Command cho Guild ID: ${process.env.GUILD_ID}`);
+      } catch (_) {
+        console.log(`⚠️ Chưa vào Guild ${process.env.GUILD_ID}, đang đăng ký Global Slash Commands...`);
+        await rest.put(Routes.applicationCommands(client.user.id), {
+          body: commands.map((c) => c.toJSON()),
+        });
+        console.log(`⚡ Đã đăng ký Global Slash Commands thành công!`);
+      }
     } else {
       await rest.put(Routes.applicationCommands(client.user.id), {
         body: commands.map((c) => c.toJSON()),
       });
-      console.log(`⚡ Đã đăng ký Slash Command toàn cầu!`);
+      console.log(`⚡ Đã đăng ký Global Slash Commands thành công!`);
     }
   } catch (err) {
     console.error('Lỗi đăng ký Slash Command:', err.message);
